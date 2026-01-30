@@ -1,0 +1,18 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+
+# Editor directories
+.vscode/
+.idea/
