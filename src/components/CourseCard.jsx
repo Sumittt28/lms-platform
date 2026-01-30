@@ -1,10 +1,10 @@
-import { Book, User } from 'lucide-react';
+import { Link } from 'react-router-dom'; // Import added here
+import { Book } from 'lucide-react';
 
 const CourseCard = ({ course }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
       <div className="h-48 bg-blue-100 flex items-center justify-center">
-        {/* We'll add actual thumbnails later, using an icon for now */}
         <Book className="h-16 w-16 text-blue-400" />
       </div>
       <div className="p-5">
@@ -13,9 +13,14 @@ const CourseCard = ({ course }) => {
         
         <div className="flex items-center justify-between mt-auto">
           <span className="text-2xl font-bold text-blue-600">${course.price}</span>
-          <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+          
+          {/* Replace your old <button> with this <Link> */}
+          <Link 
+            to={`/course/${course.id}`} 
+            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+          >
             View Details
-          </button>
+          </Link>
         </div>
       </div>
     </div>

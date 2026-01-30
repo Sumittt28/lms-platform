@@ -5,6 +5,7 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import InstructorDashboard from './pages/InstructorDashboard';
 import Courses from './pages/Courses';
+import CourseDetails from './pages/CourseDetails';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         {/* These were the ones causing the error! */}
         <Route path="/teach" element={<InstructorDashboard />} />
         <Route path="/courses" element={<Courses />} />
+        <Route path="/course/:id" element={<CourseDetails />} />
       </Routes>
     </div>
   );
