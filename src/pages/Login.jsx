@@ -22,11 +22,10 @@ const Login = () => {
 
     if (error) {
       setError(error.message);
+      setLoading(false);
     } else {
-      // Success! Send them to the home page or a dashboard
       navigate('/');
     }
-    setLoading(false);
   };
 
   return (
