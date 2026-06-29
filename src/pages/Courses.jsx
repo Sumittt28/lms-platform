@@ -6,6 +6,7 @@ import { Loader2, Search } from 'lucide-react';
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchCourses();
@@ -20,6 +21,7 @@ const Courses = () => {
 
     if (error) {
       console.error('Error fetching courses:', error);
+      setError('Failed to load courses. Please try again.');
     } else {
       setCourses(data);
     }
@@ -30,6 +32,14 @@ const Courses = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin h-10 w-10 text-blue-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-500 text-lg">{error}</p>
       </div>
     );
   }
