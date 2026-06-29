@@ -8,6 +8,7 @@ const CourseDetails = () => {
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
@@ -18,8 +19,12 @@ const CourseDetails = () => {
         .eq('id', id)
         .single();
 
-      if (error) console.error(error);
-      else setCourse(data);
+      if (error) {
+        console.error(error);
+        setFetchError('Could not load course. Please try again.');
+      } else {
+        setCourse(data);
+      }
       setLoading(false);
     };
 
@@ -52,6 +57,8 @@ const CourseDetails = () => {
       <Loader2 className="animate-spin h-10 w-10 text-blue-600" />
     </div>
   );
+
+  if (fetchError) return <div className="text-center py-20 text-red-500">{fetchError}</div>;
 
   if (!course) return <div className="text-center py-20">Course not found.</div>;
 
