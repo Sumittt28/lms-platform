@@ -76,15 +76,12 @@ const CourseDetails = () => {
           
           <h2 className="text-2xl font-bold mb-4">Course Content</h2>
           <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-              <span className="font-medium text-gray-700">1 Section • 1 Lesson</span>
+            <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <span className="font-medium text-gray-700">Lessons will appear here once added by the instructor.</span>
             </div>
-            <div className="p-4 flex items-center justify-between hover:bg-gray-50 transition cursor-not-allowed group">
-              <div className="flex items-center gap-3">
-                <PlayCircle className="text-gray-400 group-hover:text-blue-500" />
-                <span className="text-gray-700 italic">Lesson 1: Introduction (Locked)</span>
-              </div>
-              <Lock size={16} className="text-gray-400" />
+            <div className="p-6 text-center text-gray-400 text-sm">
+              <PlayCircle className="mx-auto mb-2 text-gray-300" size={36} />
+              No lessons available yet.
             </div>
           </div>
         </div>
