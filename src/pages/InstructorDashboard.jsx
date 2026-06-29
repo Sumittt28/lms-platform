@@ -7,6 +7,8 @@ const InstructorDashboard = () => {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
@@ -15,7 +17,7 @@ const InstructorDashboard = () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      alert('You must be logged in to create a course.');
+      setErrorMsg('You must be logged in to create a course.');
       setLoading(false);
       return;
     }
@@ -30,9 +32,11 @@ const InstructorDashboard = () => {
     ]);
 
     if (error) {
-      alert(error.message);
+      setErrorMsg(error.message);
+      setSuccessMsg('');
     } else {
-      alert('Course created successfully!');
+      setSuccessMsg('Course published successfully!');
+      setErrorMsg('');
       setTitle('');
       setDescription('');
       setPrice('');
@@ -53,6 +57,12 @@ const InstructorDashboard = () => {
           Create New Course
         </h2>
         
+        {successMsg && (
+          <div className="mb-4 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm">{successMsg}</div>
+        )}
+        {errorMsg && (
+          <div className="mb-4 text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm">{errorMsg}</div>
+        )}
         <form onSubmit={handleCreateCourse} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Course Title</label>
