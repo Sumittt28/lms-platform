@@ -5,12 +5,13 @@ import { BookOpen, LogOut, User } from 'lucide-react';
 
 const Navbar = () => {
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      setAuthLoading(false);
     });
 
     // Listen for changes (login/logout)
@@ -36,7 +37,7 @@ const Navbar = () => {
         <div className="space-x-6 flex items-center">
           <Link to="/courses" className="text-gray-600 hover:text-blue-600">Courses</Link>
           
-          {user ? (
+          {authLoading ? null : user ? (
             <>
               <Link to="/teach" className="text-gray-600 hover:text-blue-600">Instructor</Link>
               <button 
