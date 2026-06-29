@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader2, ArrowLeft, PlayCircle, Lock } from 'lucide-react';
 
 const CourseDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -23,6 +25,27 @@ const CourseDetails = () => {
 
     fetchCourse();
   }, [id]);
+
+  const handleEnroll = async () => {
+    setEnrolling(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    const { error } = await supabase.from('enrollments').insert([
+      { user_id: user.id, course_id: id },
+    ]);
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert('Enrolled successfully! Happy learning.');
+    }
+    setEnrolling(false);
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -66,8 +89,12 @@ const CourseDetails = () => {
                <PlayCircle size={64} className="text-blue-200" />
             </div>
             <div className="text-3xl font-bold mb-6">${course.price}</div>
-            <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition mb-4">
-              Enroll Now
+            <button
+              onClick={handleEnroll}
+              disabled={enrolling}
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition mb-4 disabled:opacity-50"
+            >
+              {enrolling ? <Loader2 className="animate-spin h-5 w-5 mx-auto" /> : 'Enroll Now'}
             </button>
             <p className="text-center text-sm text-gray-500">Full lifetime access</p>
           </div>
