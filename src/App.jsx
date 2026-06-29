@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import InstructorDashboard from './pages/InstructorDashboard';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -18,7 +19,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         
         {/* These were the ones causing the error! */}
-        <Route path="/teach" element={<InstructorDashboard />} />
+        <Route path="/teach" element={<ProtectedRoute><InstructorDashboard /></ProtectedRoute>} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/course/:id" element={<CourseDetails />} />
       </Routes>

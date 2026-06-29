@@ -12,8 +12,13 @@ const InstructorDashboard = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Get current user ID
     const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert('You must be logged in to create a course.');
+      setLoading(false);
+      return;
+    }
 
     const { error } = await supabase.from('courses').insert([
       { 
