@@ -17,7 +17,11 @@ app.use(helmet());
 
 // CORS
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: [
+    config.frontendUrl,
+    /\.vercel\.app$/,
+    'http://localhost:3000'
+  ],
   credentials: true
 }));
 
