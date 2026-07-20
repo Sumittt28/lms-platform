@@ -1,107 +1,111 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { Loader2, ArrowLeft, PlayCircle, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Clock, Users, PlayCircle } from 'lucide-react';
+import { useCourse } from '../hooks/useCourses';
+import { Card, PageLoader } from '../components/common';
+import VideoPlayer from '../components/video/VideoPlayer';
+import VideoList from '../components/video/VideoList';
+import CheckoutButton from '../components/payment/CheckoutButton';
 
 const CourseDetails = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
-  const [enrolling, setEnrolling] = useState(false);
+  const { course, loading, error } = useCourse(id);
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   useEffect(() => {
-    const fetchCourse = async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error(error);
-        setFetchError('Could not load course. Please try again.');
-      } else {
-        setCourse(data);
-      }
-      setLoading(false);
-    };
-
-    fetchCourse();
-  }, [id]);
-
-  const handleEnroll = async () => {
-    setEnrolling(true);
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      navigate('/login');
-      return;
+    if (course?.videos?.length > 0) {
+      // Select first preview video or first video if enrolled
+      const firstVideo = course.videos.find(v => v.isPreview || course.isEnrolled) || course.videos[0];
+      setSelectedVideo(firstVideo);
     }
+  }, [course]);
 
-    const { error } = await supabase.from('enrollments').insert([
-      { user_id: user.id, course_id: id },
-    ]);
+  if (loading) return <PageLoader />;
+  if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
+  if (!course) return <div className="text-center py-20">Course not found</div>;
 
-    if (error) {
-      alert(error.message);
-    } else {
-      alert('Enrolled successfully! Happy learning.');
-    }
-    setEnrolling(false);
-  };
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="animate-spin h-10 w-10 text-blue-600" />
-    </div>
-  );
-
-  if (fetchError) return <div className="text-center py-20 text-red-500">{fetchError}</div>;
-
-  if (!course) return <div className="text-center py-20">Course not found.</div>;
+  const totalDuration = course.videos?.reduce((acc, v) => acc + (v.durationSeconds || 0), 0) || 0;
+  const hours = Math.floor(totalDuration / 3600);
+  const minutes = Math.floor((totalDuration % 3600) / 60);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
-      <Link to="/courses" className="flex items-center gap-2 text-gray-500 hover:text-blue-600 mb-8">
-        <ArrowLeft size={20} /> Back to Catalog
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <Link to="/courses" className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-6">
+        <ArrowLeft className="h-4 w-4" />
+        Back to Courses
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Left Side: Info */}
-        <div className="lg:col-span-2">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{course.title}</h1>
-          <p className="text-lg text-gray-600 mb-8">{course.description}</p>
-          
-          <h2 className="text-2xl font-bold mb-4">Course Content</h2>
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <span className="font-medium text-gray-700">Lessons will appear here once added by the instructor.</span>
-            </div>
-            <div className="p-6 text-center text-gray-400 text-sm">
-              <PlayCircle className="mx-auto mb-2 text-gray-300" size={36} />
-              No lessons available yet.
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Video Player */}
+          {selectedVideo && (
+            <VideoPlayer
+              vimeoVideoId={selectedVideo.vimeoVideoId}
+              isLocked={selectedVideo.isLocked && !selectedVideo.isPreview}
+            />
+          )}
+
+          {/* Course Info */}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">{course.title}</h1>
+            <p className="text-gray-600 mb-4">{course.description}</p>
+            
+            <div className="flex items-center gap-6 text-sm text-gray-500">
+              <span>By {course.instructorName}</span>
+              <span className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                {course.enrollmentCount} students
+              </span>
+              {totalDuration > 0 && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
+                </span>
+              )}
             </div>
           </div>
+
+          {/* Video List */}
+          <Card className="p-4">
+            <h2 className="font-semibold text-gray-900 mb-4">
+              Course Content ({course.videos?.length || 0} lessons)
+            </h2>
+            {course.videos?.length > 0 ? (
+              <VideoList
+                videos={course.videos}
+                currentVideoId={selectedVideo?.id}
+                onSelectVideo={setSelectedVideo}
+                isEnrolled={course.isEnrolled}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <PlayCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No lessons available yet</p>
+              </div>
+            )}
+          </Card>
         </div>
 
-        {/* Right Side: Sidebar Card */}
+        {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-white border border-gray-100 shadow-xl rounded-2xl p-6 sticky top-24">
-            <div className="h-48 bg-blue-50 rounded-xl mb-6 flex items-center justify-center">
-               <PlayCircle size={64} className="text-blue-200" />
+          <Card className="p-6 sticky top-24">
+            <div className="text-3xl font-bold text-gray-900 mb-4">
+              ${course.price}
             </div>
-            <div className="text-3xl font-bold mb-6">${course.price}</div>
-            <button
-              onClick={handleEnroll}
-              disabled={enrolling}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition mb-4 disabled:opacity-50"
-            >
-              {enrolling ? <Loader2 className="animate-spin h-5 w-5 mx-auto" /> : 'Enroll Now'}
-            </button>
-            <p className="text-center text-sm text-gray-500">Full lifetime access</p>
-          </div>
+            
+            <CheckoutButton
+              courseId={course.id}
+              price={course.price}
+              isEnrolled={course.isEnrolled}
+            />
+
+            <div className="mt-6 space-y-3 text-sm text-gray-600">
+              <p>✓ Full lifetime access</p>
+              <p>✓ Access on mobile and desktop</p>
+              <p>✓ Certificate of completion</p>
+            </div>
+          </Card>
         </div>
       </div>
     </div>

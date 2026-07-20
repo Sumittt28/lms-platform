@@ -1,29 +1,69 @@
 import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import Signup from './pages/Signup';
+import { AuthProvider } from './context/AuthContext';
+import MainLayout from './layouts/MainLayout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Pages
+import Home from './pages/Home';
 import Login from './pages/Login';
-import InstructorDashboard from './pages/InstructorDashboard';
+import Register from './pages/Register';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
-import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
+import MyCourses from './pages/MyCourses';
+import InstructorDashboard from './pages/InstructorDashboard';
+import PaymentSuccess from './pages/PaymentSuccess';
 
 function App() {
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      
-      <Routes>
-        <Route path="/" element={<Hero />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        
-        {/* These were the ones causing the error! */}
-        <Route path="/teach" element={<ProtectedRoute><InstructorDashboard /></ProtectedRoute>} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/course/:id" element={<CourseDetails />} />
-      </Routes>
-    </div>
+    <AuthProvider>
+      <MainLayout>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/course/:id" element={<CourseDetails />} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-courses"
+            element={
+              <ProtectedRoute>
+                <MyCourses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/success"
+            element={
+              <ProtectedRoute>
+                <PaymentSuccess />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Instructor Routes */}
+          <Route
+            path="/instructor/dashboard"
+            element={
+              <ProtectedRoute requireRole="instructor">
+                <InstructorDashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MainLayout>
+    </AuthProvider>
   );
 }
 
