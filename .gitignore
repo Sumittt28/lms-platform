@@ -26,3 +26,13 @@ Thumbs.db
 
 # Docker
 postgres_data/
+
+# Vercel
+.vercel
+
+# Environment files created locally by `vercel env pull` / `vercel link`.
+# Explicitly keep .env.example files tracked - those are committed templates,
+# not real secrets, and contributors need them.
+.env*
+!.env.example
+!**/.env.example
