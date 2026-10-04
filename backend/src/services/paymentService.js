@@ -132,12 +132,25 @@ class PaymentService {
 
   async verifyPayment(sessionId) {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    
-    if (session.payment_status === 'paid') {
-      return { success: true, courseId: session.metadata.courseId };
+
+    if (session.payment_status !== 'paid') {
+      return { success: false };
     }
 
-    return { success: false };
+    // Stripe redirects the browser to the success page as soon as payment
+    // completes, but the webhook that actually creates the enrollment is a
+    // separate, asynchronous server-to-server call - it can easily arrive
+    // after the user is already back on our site. If someone clicks
+    // "Go to Course" right away, they'd see "Enroll for $X" again even
+    // though they just paid, because the webhook hadn't landed yet.
+    //
+    // handleSuccessfulPayment() is idempotent (it no-ops if the payment is
+    // already marked completed), so it's safe to call it here too as a
+    // fallback - whichever of the two paths (webhook or this verify call)
+    // runs first does the actual enrollment.
+    await this.handleSuccessfulPayment(session);
+
+    return { success: true, courseId: session.metadata.courseId };
   }
 }
 
