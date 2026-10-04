@@ -138,6 +138,28 @@ class CourseService {
   async deleteCourse(courseId, instructorId) {
     await this.verifyCourseOwnership(courseId, instructorId);
 
+    // payments.course_id is ON DELETE CASCADE, which means deleting a course
+    // would silently wipe out every payment record tied to it - including
+    // completed Stripe transactions. That's a real problem for a platform
+    // handling actual money (no accounting trail, breaks refund lookups,
+    // potentially a compliance issue too).
+    //
+    // Until the schema is migrated to a safer FK (e.g. ON DELETE RESTRICT,
+    // or a soft-delete column), block deletion at the application level if
+    // anyone has ever enrolled/paid for this course. Instructors can still
+    // unpublish a course via updateCourse to stop new signups.
+    const enrollmentCheck = await pool.query(
+      'SELECT COUNT(*) FROM enrollments WHERE course_id = $1',
+      [courseId]
+    );
+
+    if (parseInt(enrollmentCheck.rows[0].count) > 0) {
+      throw {
+        statusCode: 409,
+        message: 'Cannot delete a course with existing enrollments. Unpublish it instead to stop new signups.'
+      };
+    }
+
     await pool.query('DELETE FROM courses WHERE id = $1', [courseId]);
     return { message: 'Course deleted successfully' };
   }
