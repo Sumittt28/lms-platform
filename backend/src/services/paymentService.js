@@ -95,6 +95,21 @@ class PaymentService {
     try {
       await client.query('BEGIN');
 
+      // Stripe delivers webhooks at-least-once, so we can get the same
+      // "checkout.session.completed" event more than once (retries on
+      // timeout, network blips, etc). Guard against double-processing by
+      // checking the current status first - if it's already completed,
+      // there's nothing left to do.
+      const existing = await client.query(
+        `SELECT status FROM payments WHERE stripe_session_id = $1 FOR UPDATE`,
+        [session.id]
+      );
+
+      if (existing.rows.length > 0 && existing.rows[0].status === 'completed') {
+        await client.query('ROLLBACK');
+        return;
+      }
+
       // Create enrollment
       const enrollmentId = await enrollmentService.enrollUser(userId, courseId, client);
 

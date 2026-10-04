@@ -5,14 +5,22 @@ class EnrollmentService {
   async enrollUser(userId, courseId, client = pool) {
     const enrollmentId = uuidv4();
 
-    await client.query(
+    // Use DO UPDATE instead of DO NOTHING so we always get a row back via
+    // RETURNING. With DO NOTHING, a conflict (e.g. webhook retry for an
+    // already-enrolled user) would silently insert nothing, but we'd still
+    // return the freshly generated enrollmentId as if it existed - that ID
+    // doesn't actually exist in the table, which blows up with a foreign
+    // key violation wherever it's used afterwards (e.g. payments.enrollment_id).
+    const result = await client.query(
       `INSERT INTO enrollments (id, user_id, course_id)
        VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, course_id) DO NOTHING`,
+       ON CONFLICT (user_id, course_id)
+       DO UPDATE SET user_id = EXCLUDED.user_id
+       RETURNING id`,
       [enrollmentId, userId, courseId]
     );
 
-    return enrollmentId;
+    return result.rows[0].id;
   }
 
   async getEnrolledCourses(userId) {
