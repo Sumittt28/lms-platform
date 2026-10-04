@@ -6,6 +6,7 @@ import { Card, PageLoader } from '../components/common';
 import VideoPlayer from '../components/video/VideoPlayer';
 import VideoList from '../components/video/VideoList';
 import CheckoutButton from '../components/payment/CheckoutButton';
+import videoService from '../services/videoService';
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -19,6 +20,14 @@ const CourseDetails = () => {
       setSelectedVideo(firstVideo);
     }
   }, [course]);
+
+  const handleProgress = (videoId, watchedSeconds, isCompleted) => {
+    // Fire-and-forget: don't block video playback on this request, and don't
+    // want a flaky network blip to surface as a visible error to the viewer.
+    videoService.updateProgress(videoId, watchedSeconds, isCompleted).catch((err) => {
+      console.error('Failed to save video progress:', err.message);
+    });
+  };
 
   if (loading) return <PageLoader />;
   if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
@@ -41,8 +50,10 @@ const CourseDetails = () => {
           {/* Video Player */}
           {selectedVideo && (
             <VideoPlayer
+              videoId={selectedVideo.id}
               vimeoVideoId={selectedVideo.vimeoVideoId}
               isLocked={selectedVideo.isLocked && !selectedVideo.isPreview}
+              onProgress={handleProgress}
             />
           )}
 
@@ -76,7 +87,6 @@ const CourseDetails = () => {
                 videos={course.videos}
                 currentVideoId={selectedVideo?.id}
                 onSelectVideo={setSelectedVideo}
-                isEnrolled={course.isEnrolled}
               />
             ) : (
               <div className="text-center py-8 text-gray-500">
