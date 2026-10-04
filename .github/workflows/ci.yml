@@ -10,7 +10,8 @@ jobs:
   backend-check:
     name: Backend Check
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     defaults:
       run:
         working-directory: ./backend
@@ -29,16 +30,47 @@ jobs:
         run: npm ci
 
       - name: Check for syntax errors
-        run: node --check src/app.js
-
-      - name: Verify imports
         run: |
-          node -e "import('./src/app.js').then(() => console.log('✅ Imports OK')).catch(e => { console.error(e); process.exit(1); })"
+          for f in $(find src -name '*.js'); do node --check "$f"; done
+
+      # app.js calls app.listen() at import time and never exits on its own,
+      # so a plain `import()` here would just hang the job forever. Instead,
+      # actually boot the server in the background with throwaway env vars,
+      # poll the health endpoint with a timeout, then make sure to kill the
+      # process either way so the job can't get stuck.
+      - name: Boot server and check health endpoint
+        env:
+          PORT: 5050
+          NODE_ENV: production
+          DATABASE_URL: postgresql://fake:fake@localhost:5432/fake
+          JWT_SECRET: ci-smoke-test-secret-not-used-for-anything-real
+          STRIPE_SECRET_KEY: sk_test_fake_key_for_ci_smoke_test
+          FRONTEND_URL: http://localhost:3000
+        run: |
+          node src/app.js &
+          SERVER_PID=$!
+
+          cleanup() {
+            kill $SERVER_PID 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:5050/api/health > /dev/null; then
+              echo "✅ Server booted and responded healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "❌ Server did not become healthy in time"
+          exit 1
 
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     defaults:
       run:
         working-directory: ./frontend
@@ -75,6 +107,7 @@ jobs:
     name: Docker Build Test
     runs-on: ubuntu-latest
     needs: [backend-check, frontend-build]
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
