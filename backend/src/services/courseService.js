@@ -4,6 +4,27 @@ import pool from '../config/db.js';
 class CourseService {
   async getAllCourses({ page = 1, limit = 12, categoryId, search }) {
     const offset = (page - 1) * limit;
+
+    // Build the WHERE clause once so the count query stays in sync with
+    // the main query. Previously the count query was hardcoded and ignored
+    // categoryId/search, so searching or filtering showed the wrong
+    // totalPages and pagination broke (e.g. page 2+ would come back empty
+    // even though the UI said there were more results).
+    let whereClause = ' WHERE c.is_published = true';
+    const params = [];
+    let paramIndex = 1;
+
+    if (categoryId) {
+      whereClause += ` AND c.category_id = $${paramIndex++}`;
+      params.push(categoryId);
+    }
+
+    if (search) {
+      whereClause += ` AND (c.title ILIKE $${paramIndex} OR c.description ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
     let query = `
       SELECT c.*, u.full_name as instructor_name,
              cat.name as category_name,
@@ -12,32 +33,19 @@ class CourseService {
       LEFT JOIN users u ON c.instructor_id = u.id
       LEFT JOIN categories cat ON c.category_id = cat.id
       LEFT JOIN enrollments e ON c.id = e.course_id
-      WHERE c.is_published = true
+      ${whereClause}
+      GROUP BY c.id, u.full_name, cat.name
+      ORDER BY c.created_at DESC
+      LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `;
-    const params = [];
-    let paramIndex = 1;
-
-    if (categoryId) {
-      query += ` AND c.category_id = $${paramIndex++}`;
-      params.push(categoryId);
-    }
-
-    if (search) {
-      query += ` AND (c.title ILIKE $${paramIndex} OR c.description ILIKE $${paramIndex})`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    query += ` GROUP BY c.id, u.full_name, cat.name`;
-    query += ` ORDER BY c.created_at DESC`;
-    query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limit, offset);
 
     const result = await pool.query(query, params);
 
-    // Get total count
-    let countQuery = `SELECT COUNT(*) FROM courses WHERE is_published = true`;
-    const countResult = await pool.query(countQuery);
+    // Get total count using the same filters (but without limit/offset params)
+    const countParams = params.slice(0, paramIndex - 2);
+    const countQuery = `SELECT COUNT(*) FROM courses c ${whereClause}`;
+    const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
 
     return {
