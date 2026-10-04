@@ -7,23 +7,23 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   const checkAuth = async () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const userData = await authService.getMe();
         setUser(userData);
-      } catch (error) {
+      } catch {
         localStorage.removeItem('token');
         setUser(null);
       }
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   const login = async (email, password) => {
     const { user, token } = await authService.login(email, password);
@@ -63,6 +63,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// useAuth is tightly coupled to AuthProvider/AuthContext in this file; every
+// page already imports useAuth from here, so splitting it out is a larger
+// refactor touching every consumer rather than a quick lint fix.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

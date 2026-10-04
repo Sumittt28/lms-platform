@@ -29,7 +29,7 @@ const PaymentSuccess = () => {
       } else {
         setStatus('error');
       }
-    } catch (err) {
+    } catch {
       setStatus('error');
     }
   };

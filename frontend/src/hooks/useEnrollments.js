@@ -38,7 +38,7 @@ export const useEnrollmentStatus = (courseId) => {
     try {
       const data = await enrollmentService.checkEnrollment(courseId);
       setIsEnrolled(data.isEnrolled);
-    } catch (err) {
+    } catch {
       setIsEnrolled(false);
     } finally {
       setLoading(false);

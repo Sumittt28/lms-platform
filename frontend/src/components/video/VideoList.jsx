@@ -1,6 +1,6 @@
 import { Play, Lock, CheckCircle } from 'lucide-react';
 
-const VideoList = ({ videos, currentVideoId, onSelectVideo, isEnrolled }) => {
+const VideoList = ({ videos, currentVideoId, onSelectVideo }) => {
   const formatDuration = (seconds) => {
     if (!seconds) return '';
     const mins = Math.floor(seconds / 60);
